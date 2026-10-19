@@ -128,3 +128,140 @@ def test_event_analytics():
 def test_event_analytics_not_found():
     response=client.get("/events/999999/analytics")
     assert response.status_code==404    
+
+
+
+def test_register_attendee():
+    # Create a test event
+    event_response = client.post(
+        "/events",
+        json={
+            "title": "Registration Test Event",
+            "description": "Testing attendee registration",
+            "location": "Jaipur",
+            "capacity": 5
+        }
+    )
+    assert event_response.status_code == 201
+
+    event_id = event_response.json()["event"]["id"]
+
+    # Register an attendee
+    response = client.post(
+        f"/events/{event_id}/register",
+        json={
+            "attendee_name": "Test Attendee",
+            "attendee_email": "attendee_test@example.com"
+        }
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["registration"]["attendee_email"] == (
+        "attendee_test@example.com"
+    )
+    assert data["registration"]["ticket_code"]
+
+    # Clean up
+    delete_response = client.delete(f"/events/{event_id}")
+    assert delete_response.status_code == 200
+
+
+
+def test_duplicate_registration():
+    event_response = client.post(
+        "/events",
+        json={
+            "title": "Duplicate Test Event",
+            "description": "Testing duplicate registration",
+            "location": "Jaipur",
+            "capacity": 5
+        }
+    )
+    assert event_response.status_code == 201
+
+    event_id = event_response.json()["event"]["id"]
+
+    attendee = {
+        "attendee_name": "Duplicate Tester",
+        "attendee_email": "duplicate_test@example.com"
+    }
+
+    # First registration should succeed
+    first_response = client.post(
+        f"/events/{event_id}/register",
+        json=attendee
+    )
+    assert first_response.status_code == 201
+
+    # Same email for the same event should be rejected
+    second_response = client.post(
+        f"/events/{event_id}/register",
+        json=attendee
+    )
+    assert second_response.status_code == 400
+
+    # Clean up the event
+    delete_response = client.delete(f"/events/{event_id}")
+    assert delete_response.status_code == 200
+
+
+def test_check_in_invalid_ticket():
+    response = client.post(
+        "/registrations/check-in/invalid-ticket-code"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Invalid ticket code"
+
+
+
+def test_successful_and_duplicate_check_in():
+    # Create an event
+    event_response = client.post(
+        "/events",
+        json={
+            "title": "Check-in Test Event",
+            "description": "Testing QR check-in",
+            "location": "Jaipur",
+            "capacity": 5
+        }
+    )
+    assert event_response.status_code == 201
+    event_id = event_response.json()["event"]["id"]
+
+    # Register an attendee
+    registration_response = client.post(
+        f"/events/{event_id}/register",
+        json={
+            "attendee_name": "Checkin Tester",
+            "attendee_email": "checkin_test@example.com"
+        }
+    )
+    assert registration_response.status_code == 201
+
+    ticket_code = registration_response.json()["registration"]["ticket_code"]
+
+    # First check-in should succeed
+    first_checkin = client.post(
+        f"/registrations/check-in/{ticket_code}"
+    )
+    assert first_checkin.status_code == 200
+    assert first_checkin.json()["checked_in"] is True
+
+    # Second check-in should be rejected
+    second_checkin = client.post(
+        f"/registrations/check-in/{ticket_code}"
+    )
+    assert second_checkin.status_code == 400
+    assert second_checkin.json()["detail"] == "Ticket already checked in"
+
+    # Verify analytics
+    analytics = client.get(f"/events/{event_id}/analytics")
+    assert analytics.status_code == 200
+    assert analytics.json()["checked_in"] == 1
+
+    # Clean up the event
+    delete_response = client.delete(f"/events/{event_id}")
+    assert delete_response.status_code == 200
