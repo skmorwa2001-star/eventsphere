@@ -279,3 +279,30 @@ def check_in_attendee(
         "checked_in":True
     }
 
+@app.get("/events/{event_id}/analytics")
+def get_event_analytics(
+    event_id:int,
+    db:Session=Depends(get_db)
+):
+    event=db.query(Event).filter(Event.id==event_id).first()
+
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    registrations=(db.query(Registration).filter(Registration.event_id==event_id).all())
+
+    total_registrations=len(registrations)
+
+    checked_in_count=sum(1 for r in registrations if r.checked_in==1)
+
+    pending_count=total_registrations-checked_in_count
+
+    return{
+        "event_id":event.id,
+        "event_title":event.title,
+        "capacity":event.capacity,
+        "total_registrations":total_registrations,
+        "checked_in":checked_in_count,
+        "pending_count_in":pending_count,
+        "available_seats":max(event.capacity-total_registrations,0)
+    }
