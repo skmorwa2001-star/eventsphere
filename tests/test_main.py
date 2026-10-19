@@ -93,3 +93,38 @@ def test_delete_event():
 
     assert response.status_code==200
     assert response.json()["message"]=="Event deleted successfully"
+
+
+def test_event_analytics():
+    # create an event
+    create_response=client.post(
+        "/events",
+        json={
+            "title":"Analytics Test Event",
+            "description":"Testing Analytics",
+            "location":"Jaipur",
+            "capacity":10
+        }
+    )
+    assert create_response.status_code==201
+    event_id=create_response.json()["event"]["id"]
+
+    # check analystics for new event
+    response=client.get(f"/events/{event_id}/analytics")
+
+    assert response.status_code==200
+
+    data=response.json()
+    assert data["event_id"]==event_id
+    assert data["total_registrations"]==0
+    assert data["checked_in"]==0
+    assert data["pending_count_in"]==0
+    assert data["available_seats"]==10
+
+    # Clean up
+    delete_response=client.delete(f"/events/{event_id}")
+    assert delete_response.status_code==200
+
+def test_event_analytics_not_found():
+    response=client.get("/events/999999/analytics")
+    assert response.status_code==404    
