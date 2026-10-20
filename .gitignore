@@ -8,6 +8,22 @@ __pycache__/
 
 # Environment variables and secrets
 .env
+.env.*
+!.env.example
+.venv/
+venv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated QR images
+qr_codes/
 
 # Editor settings
 .vscode/
+.DS_Store

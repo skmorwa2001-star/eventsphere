@@ -91,7 +91,7 @@ def update_event(
     event.location=event_data.location
     event.capcaity=event_data.capacity
 
-    db.commit
+    db.commit()
     db.refresh(event)
 
     return{
@@ -115,7 +115,7 @@ def delete_event(
     if event is None:
         raise HTTPException(
             status_code=404,
-            details="Event not found"
+            detail="Event not found"
         )
     db.delete(event)
     db.commit()
@@ -197,7 +197,7 @@ def register_attendee(
             "attendee_email": new_registration.attendee_email,
             "event_id": new_registration.event_id,
             "ticket_code": new_registration.ticket_code,
-            "checked_in":new_registration.ticket_code,
+            "checked_in":bool(new_registration.checked_in),
             "qr_code_url":f"/qr_codes/ticket_{new_registration.id}.png"
         }
     }

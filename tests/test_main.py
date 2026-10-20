@@ -1,8 +1,53 @@
+import pytest
 from fastapi.testclient import TestClient
-from main import app
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+import models
+from database import Base
+from main import app, get_db
+
+
+# Separate in-memory SQLite database for testing
+TEST_DATABASE_URL = "sqlite://"
+
+test_engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=test_engine,
+)
+
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# Make FastAPI use the test database instead of Supabase
+app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest.fixture(autouse=True)
+def reset_test_database():
+    Base.metadata.drop_all(bind=test_engine)
+    Base.metadata.create_all(bind=test_engine)
+
+    yield
+
+    Base.metadata.drop_all(bind=test_engine)
+
 
 client = TestClient(app)
-
 
 def test_home():
     response = client.get("/")
@@ -39,7 +84,6 @@ def test_create_event_invalid_capacity():
     )
     assert response.status_code==422
 
-
 def test_update_event():
     # Step 1: Create an event first
     create_response = client.post(
@@ -55,7 +99,7 @@ def test_update_event():
     assert create_response.status_code == 201
 
     # Step 2: Get the event ID from the response
-    event_id = create_response.json()["event"]
+    event_id = create_response.json()["event"]["id"]
 
     # Step 3: Update the event
     response = client.put(
