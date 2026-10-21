@@ -1,16 +1,54 @@
 from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
-from database import SessionLocal
-from models import Event, Registration
-from schemas import EventCreate, RegistrationCreate
+from pwdlib import PasswordHash
+
+from database import SessionLocal, Base , engine
+import models
+from models import Event, Registration, User
+from schemas import EventCreate, RegistrationCreate, UserCreate, UserLogin
 import uuid
 import qrcode
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 app=FastAPI(title="EventSphere API")
+
+# Create database tables for all imported models
+Base.metadata.create_all(bind=engine)
+
+if "role" not in {
+    column["name"] for column in inspect(engine).get_columns("users")
+}:
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN role "
+                "VARCHAR(20) NOT NULL DEFAULT 'participant'"
+            )
+        )
+
+# Add events.event_date to databases created before this column existed
+if "event_date" not in {
+    column["name"] for column in inspect(engine).get_columns("events")
+}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE events ADD COLUMN event_date TIMESTAMP"))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 QR_FOLDER=Path("qr_codes")
+QR_FOLDER.mkdir(exist_ok=True)  # must exist before StaticFiles mounts it
 
 app.mount(
     "/qr_codes",
@@ -19,6 +57,9 @@ app.mount(
 )
 
 QR_FOLDER.mkdir(exist_ok=True)
+
+def iso(value):
+    return value.isoformat() if value else None
 
 def get_db():
     db=SessionLocal()
@@ -35,7 +76,7 @@ def home():
 
 @app.post("/events",status_code=201)
 def create_event(event_data:EventCreate, db:Session= Depends(get_db)):
-    new_event=Event(title=event_data.title, description=event_data.description, location=event_data.location, capacity=event_data.capacity)
+    new_event=Event(title=event_data.title, description=event_data.description, location=event_data.location, event_date=event_data.event_date, capacity=event_data.capacity)
 
     db.add(new_event)
     db.commit()
@@ -48,7 +89,8 @@ def create_event(event_data:EventCreate, db:Session= Depends(get_db)):
             "title":new_event.title,
             "description":new_event.description,
             "location":new_event.location,
-            "capacity":new_event.capacity
+            "capacity":new_event.capacity,
+            "event_date":iso(new_event.event_date)
         }
     }
 
@@ -65,7 +107,8 @@ def get_events(db:Session=Depends(get_db)):
                 "title":event.title,
                 "description":event.description,
                 "location":event.location,
-                "capacity":event.capacity
+                "capacity":event.capacity,
+                "event_date":iso(event.event_date)
             }
             for event in events
         ]
@@ -89,7 +132,8 @@ def update_event(
     event.title=event_data.title
     event.description=event_data.description
     event.location=event_data.location
-    event.capcaity=event_data.capacity
+    event.event_date=event_data.event_date
+    event.capacity=event_data.capacity
 
     db.commit()
     db.refresh(event)
@@ -101,7 +145,8 @@ def update_event(
             "title":event.title,
             "description":event.description,
             "location":event.location,
-            "capacity":event.capacity
+            "capacity":event.capacity,
+                "event_date":iso(event.event_date)
         }
     }
 
@@ -225,7 +270,8 @@ def get_event_registrations(
             {
                 "id":registration.id,
                 "attendee_name":registration.attendee_name,
-                "attendee_email":registration.attendee_email
+                "attendee_email":registration.attendee_email,
+                "checked_in":bool(registration.checked_in)
             }
             for registration in registrations
         ]
@@ -305,4 +351,84 @@ def get_event_analytics(
         "checked_in":checked_in_count,
         "pending_count_in":pending_count,
         "available_seats":max(event.capacity-total_registrations,0)
+    }
+
+
+password_hash = PasswordHash.recommended()
+
+@app.post("/auth/signup", status_code=201)
+def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+    existing_user = (
+        db.query(User)
+        .filter(User.email == user_data.email)
+        .first()
+    )
+
+    if existing_user:
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this email already exists"
+        )
+
+    new_user = User(
+        name=user_data.name,
+        email=user_data.email,
+        hashed_password=password_hash.hash(user_data.password),
+        role=user_data.role
+    )
+
+    db.add(new_user)
+
+    try:
+        db.commit()
+        db.refresh(new_user)
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Could not create account"
+        )
+
+    return {
+        "message": "Account created successfully",
+        "user": {
+            "id": new_user.id,
+            "name": new_user.name,
+            "email": new_user.email,
+            "role": new_user.role
+        }
+    }
+
+
+@app.post("/auth/login")
+def login(user_data: UserLogin, db: Session = Depends(get_db)):
+    user = (
+        db.query(User)
+        .filter(User.email == user_data.email)
+        .first()
+    )
+
+    if user is None or not password_hash.verify(
+        user_data.password,
+        user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    if user.role != user_data.role:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This account uses the {user.role} role."
+        )
+
+    return {
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role
+        }
     }

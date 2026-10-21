@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EventSphere · Home</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/home.css">
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+
+<!-- Navigation -->
+<header class="glass">
+  <a class="logo" href="index.html">◉ EventSphere</a>
+  <button class="chip" id="st" title="Click to change backend URL">● checking…</button>
+  <nav class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#events">Events</a>
+    <a class="btn sm" href="app.html">Launch App</a>
+  </nav>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero">
+    <span class="chip badge">✨ Events made effortless</span>
+    <h1>Host, join and check in to events <span class="grad">in seconds</span></h1>
+    <p>EventSphere lets organizers publish events and track attendance, while participants grab a QR ticket with a single click.</p>
+    <div class="row cta">
+      <a class="btn lg" href="app.html">Get started</a>
+      <a class="btn lg ghost" href="#features">See features</a>
+    </div>
+    <div class="stat-strip">
+      <div class="stat glass"><b id="statEvents">…</b><span class="small">Live events</span></div>
+      <div class="stat glass"><b id="statSeats">…</b><span class="small">Total seats</span></div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section" id="features">
+    <h2>Everything you need</h2><p class="sub">One simple platform for both sides of an event.</p>
+    <div class="grid">
+      <article class="glass card"><span class="icon">🗓️</span><h3>Create events</h3><p>Organizers publish events with a location and capacity, and can edit or remove them any time.</p></article>
+      <article class="glass card"><span class="icon">🎟️</span><h3>QR tickets</h3><p>Every registration generates a unique ticket code and QR image instantly.</p></article>
+      <article class="glass card"><span class="icon">✅</span><h3>Fast check-in</h3><p>Paste or scan a ticket code to check attendees in. Duplicate scans are rejected.</p></article>
+      <article class="glass card"><span class="icon">📊</span><h3>Live analytics</h3><p>See registrations, check-ins, pending attendees and seats left per event.</p></article>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section" id="how">
+    <h2>How it works</h2><p class="sub">Three steps from idea to full house.</p>
+    <div class="grid">
+      <article class="glass card"><span class="step-n">1</span><h3>Sign up</h3><p>Choose organizer or participant and create your account.</p></article>
+      <article class="glass card"><span class="step-n">2</span><h3>Create or register</h3><p>Organizers add events; participants register and receive a QR ticket.</p></article>
+      <article class="glass card"><span class="step-n">3</span><h3>Check in</h3><p>At the door, organizers verify tickets and watch attendance update live.</p></article>
+    </div>
+  </section>
+
+  <!-- Live events from the API -->
+  <section class="section" id="events">
+    <h2>Happening now</h2><p class="sub">Fresh from the EventSphere API.</p>
+    <div class="grid" id="liveEvents"><div class="empty">Loading…</div></div>
+  </section>
+
+  <section class="glass final">
+    <h2>Ready to get started?</h2>
+    <p>Create your free account and run your first event today.</p>
+    <a class="btn lg" href="app.html">Launch EventSphere</a>
+  </section>
+</main>
+
+<footer>© EventSphere · Built with FastAPI</footer>
+<div id="toast" class="glass"></div>
+
+<!-- Event details modal (filled by home.js) -->
+<div class="modal" id="mDet"><div class="glass box">
+  <h2 id="dTitle"></h2>
+  <div id="dBody"></div>
+  <div class="row" id="dActions" style="margin-top:20px;justify-content:flex-end"></div>
+</div></div>
+
+<script src="js/api.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

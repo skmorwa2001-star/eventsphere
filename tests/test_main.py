@@ -309,3 +309,95 @@ def test_successful_and_duplicate_check_in():
     # Clean up the event
     delete_response = client.delete(f"/events/{event_id}")
     assert delete_response.status_code == 200
+
+
+def test_event_registrations_include_entry_status():
+    event_response = client.post(
+        "/events",
+        json={
+            "title": "Attendee Status Test Event",
+            "description": "Testing attendee entry status",
+            "location": "Jaipur",
+            "capacity": 5
+        }
+    )
+    assert event_response.status_code == 201
+    event_id = event_response.json()["event"]["id"]
+
+    registration_response = client.post(
+        f"/events/{event_id}/register",
+        json={
+            "attendee_name": "Status Tester",
+            "attendee_email": "status_test@example.com"
+        }
+    )
+    assert registration_response.status_code == 201
+
+    attendees_response = client.get(
+        f"/events/{event_id}/registrations"
+    )
+    assert attendees_response.status_code == 200
+    attendee = attendees_response.json()["attendees"][0]
+    assert attendee["attendee_name"] == "Status Tester"
+    assert attendee["checked_in"] is False
+    assert "ticket_code" not in attendee
+
+    ticket_code = registration_response.json()["registration"]["ticket_code"]
+    check_in_response = client.post(
+        f"/registrations/check-in/{ticket_code}"
+    )
+    assert check_in_response.status_code == 200
+
+    updated_attendees_response = client.get(
+        f"/events/{event_id}/registrations"
+    )
+    assert updated_attendees_response.json()["attendees"][0]["checked_in"] is True
+
+
+def test_signup_and_login_keep_selected_role():
+    signup_response = client.post(
+        "/auth/signup",
+        json={
+            "name": "Organizer User",
+            "email": "organizer_auth_test@example.com",
+            "password": "secure-test-password",
+            "role": "organizer"
+        }
+    )
+    assert signup_response.status_code == 201
+    assert signup_response.json()["user"]["role"] == "organizer"
+
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "email": "organizer_auth_test@example.com",
+            "password": "secure-test-password",
+            "role": "organizer"
+        }
+    )
+    assert login_response.status_code == 200
+    assert login_response.json()["user"]["role"] == "organizer"
+
+    wrong_role_response = client.post(
+        "/auth/login",
+        json={
+            "email": "organizer_auth_test@example.com",
+            "password": "secure-test-password",
+            "role": "participant"
+        }
+    )
+    assert wrong_role_response.status_code == 403
+
+
+def test_signup_rejects_unknown_role():
+    response = client.post(
+        "/auth/signup",
+        json={
+            "name": "Invalid Role",
+            "email": "invalid_role_test@example.com",
+            "password": "secure-test-password",
+            "role": "admin"
+        }
+    )
+
+    assert response.status_code == 422

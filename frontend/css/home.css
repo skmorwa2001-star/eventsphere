@@ -1,0 +1,29 @@
+/* ===========================================================
+   home.css — extra styles for the landing page (index.html)
+   Uses the shared glass tokens from style.css
+   =========================================================== */
+.logo{text-decoration:none}
+.nav-links{display:flex;gap:6px;margin-left:auto;align-items:center}
+.nav-links a:not(.btn){color:var(--mut);text-decoration:none;padding:8px 12px;border-radius:12px}
+.nav-links a:not(.btn):hover{background:rgba(255,255,255,.7);color:var(--acc)}
+
+.hero{text-align:center;padding:70px 10px 40px;max-width:760px;margin:0 auto}
+.badge{display:inline-block;margin-bottom:18px}
+.hero h1{font-size:clamp(2.2rem,6vw,3.8rem);line-height:1.1;font-weight:800}
+.grad{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);font-size:1.1rem;line-height:1.6;margin:20px auto 30px;max-width:560px}
+.cta{justify-content:center}
+.btn.lg{padding:14px 28px;font-size:1rem;text-decoration:none;display:inline-block}
+
+.section{margin-top:70px}
+.section h2{text-align:center;margin-bottom:8px}
+.section .sub{text-align:center;color:var(--mut);margin-bottom:28px}
+.icon{font-size:1.8rem}
+.step-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2))}
+
+.stat-strip{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:44px}
+.stat-strip .stat{min-width:150px;padding:18px 26px}
+
+.final{text-align:center;padding:44px 24px;margin-top:70px}
+.final p{color:var(--mut);margin:10px 0 22px}
+footer{text-align:center;color:var(--mut);font-size:.85rem;padding:20px}

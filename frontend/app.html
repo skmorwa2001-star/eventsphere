@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EventSphere · App</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+
+<header class="glass" id="hdr">
+  <a class="logo" href="index.html">◉ EventSphere</a>
+  <button class="chip" id="st" title="Click to change backend URL">● checking…</button>
+  <nav id="nav" class="hide">
+    <button class="tab on" data-v="events">Events</button>
+    <button class="tab org hide" data-v="checkin">Check-in</button>
+    <button class="tab par hide" data-v="tickets">My Tickets</button>
+  </nav>
+  <span class="chip hide" id="who"></span>
+  <button class="btn ghost sm hide" id="out">Log out</button>
+</header>
+
+<main>
+  <!-- AUTH -->
+  <section id="auth" class="glass auth">
+    <h2 id="authT">Welcome back</h2>
+    <p class="small" style="margin-top:4px">Sign in to discover and manage events.</p>
+    <div class="seg" id="roleSeg"><button data-r="participant" class="on">Participant</button><button data-r="organizer">Organizer</button></div>
+    <div id="nameWrap" class="hide"><label>Full name<input id="aName" placeholder="Jane Doe"></label></div>
+    <label>Email<input id="aEmail" type="email" placeholder="you@example.com"></label>
+    <label>Password<input id="aPass" type="password" placeholder="Min 8 characters"></label>
+    <button class="btn" id="authBtn" style="width:100%;margin-top:20px">Log in</button>
+    <p class="small" style="text-align:center;margin-top:14px"><span id="swTxt">No account?</span> <a href="#" id="swBtn" style="color:var(--acc2)">Sign up</a></p>
+  </section>
+
+  <!-- EVENTS -->
+  <section id="v-events" class="hide">
+    <div class="bar"><h2>Upcoming Events</h2><button class="btn org hide" id="newEv">+ New Event</button></div>
+    <div class="grid" id="evGrid"></div>
+  </section>
+
+  <!-- CHECK-IN -->
+  <section id="v-checkin" class="hide">
+    <div class="glass" style="max-width:480px;margin:0 auto;padding:28px">
+      <h2>Attendee Check-in</h2><p class="small" style="margin-top:4px">Scan the attendee's QR ticket, or type the ticket code.</p>
+
+      <!-- QR scanner -->
+      <div id="scanBox" class="scan-box hide">
+        <video id="scanVideo" playsinline muted></video>
+        <div class="scan-frame"></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" id="scanBtn" style="flex:1">📷 Start scanner</button>
+        <label class="btn ghost" style="flex:1;margin:0;text-align:center;color:var(--txt)">🖼️ Upload QR image
+          <input type="file" id="scanFile" accept="image/*" hidden>
+        </label>
+      </div>
+      <p id="scanHint" class="small" style="margin-top:8px;text-align:center"></p>
+      <canvas id="scanCanvas" class="hide"></canvas>
+
+      <!-- Manual fallback -->
+      <label>Or enter ticket code<input id="ciCode" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>
+      <button class="btn" id="ciBtn" style="width:100%;margin-top:18px">Check in</button>
+      <p id="ciRes" class="ci-res"></p>
+    </div>
+  </section>
+
+  <!-- TICKETS -->
+  <section id="v-tickets" class="hide">
+    <div class="bar"><h2>My Tickets</h2></div>
+    <div class="grid" id="tkGrid"></div>
+  </section>
+</main>
+
+<!-- Event form modal -->
+<div class="modal" id="mEv"><div class="glass box">
+  <h2 id="evT">New Event</h2>
+  <label>Title<input id="eTitle"></label>
+  <label>Description<textarea id="eDesc" rows="3"></textarea></label>
+  <label>Date &amp; time<input id="eDate" type="datetime-local"></label>
+  <label>Location<input id="eLoc"></label>
+  <label>Capacity<input id="eCap" type="number" min="1"></label>
+  <div class="row" style="margin-top:20px;justify-content:flex-end"><button class="btn ghost close">Cancel</button><button class="btn" id="evSave">Save</button></div>
+</div></div>
+
+<!-- Register modal -->
+<div class="modal" id="mReg"><div class="glass box">
+  <h2 id="rT">Register</h2>
+  <label>Name<input id="rName"></label>
+  <label>Email<input id="rEmail" type="email"></label>
+  <div class="row" style="margin-top:20px;justify-content:flex-end"><button class="btn ghost close">Cancel</button><button class="btn" id="rSave">Get ticket</button></div>
+</div></div>
+
+<!-- Ticket modal -->
+<div class="modal" id="mTk"><div class="glass box" style="text-align:center">
+  <h2 id="tkT">Your Ticket</h2><p class="small" id="tkSub"></p>
+  <img class="qr" id="tkQr" alt="QR code"><p class="code" id="tkCode"></p>
+  <div class="row" style="justify-content:center;margin-top:18px"><button class="btn" id="tkDl">⬇ Download QR</button><button class="btn ghost close">Close</button></div>
+</div></div>
+
+<!-- Event details modal -->
+<div class="modal" id="mDet"><div class="glass box">
+  <h2 id="dTitle"></h2>
+  <div id="dBody"></div>
+  <div class="row" id="dActions" style="margin-top:20px;justify-content:flex-end"></div>
+</div></div>
+
+<!-- Manage modal -->
+<div class="modal" id="mMg"><div class="glass box" style="max-width:680px">
+  <h2 id="mgT">Event</h2>
+  <div class="stats" id="mgStats"></div>
+  <div style="overflow:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody id="mgBody"></tbody></table></div>
+  <div class="row" style="margin-top:18px;justify-content:flex-end"><button class="btn ghost close">Close</button></div>
+</div></div>
+
+<div id="toast" class="glass"></div>
+
+<!-- jsQR (local copy): QR decoder used when the browser has no BarcodeDetector -->
+<script src="js/jsQR.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
